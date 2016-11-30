@@ -2,18 +2,34 @@
 #include "colorShield.h"
 #include "selfmpu.h"
 
+Timer t;
+Timer T;
+
+int timeout = 120;
+bool is_win = true;
+
 uint8_t wall[3] = {0,25,25};
 uint8_t path[3] = {0,0,0};
 uint8_t character[3] = {255,255,0};
+uint8_t end_item[3] = {0,255,0};
+uint8_t bad_item[3] = {0,0,255};
+uint8_t good_item[3] = {255,0,255};
 Serial pc(D1,D0);
 Color_shield color_s;
 MPU9555 mpu;
+
+bool is_revert = false;
+
+
 
 float gyroBias[3],accBias[3];
 
 int frameCountx = 0;
 int frameCounty = 0;
 int centerNow[2] = {3,3};
+int special_item[2];
+int increase_time[2];
+int revert_item_pos[2];
 int previousCenter[2] = {3,3};
 int mapsize[2] = {48,48};
 uint8_t *output[8][8];
@@ -87,35 +103,35 @@ uint8_t *map2[8][8] = {{wall,wall,wall,path,path,wall,wall,wall},
                       {wall,wall,wall,path,path,wall,wall,wall},
                       {wall,wall,wall,path,path,wall,wall,wall}};
 
-  uint8_t pat_1[8][8][3] ={     {{0,28,3},{0,26,5},{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14},{0,14,16}},
+  uint8_t pat_1[8][8][3] ={     {{0,30,0},{0,28,3},{0,26,5},{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14}},
+                                {{0,28,3},{0,26,5},{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14},{0,14,16}},
                                 {{0,26,5},{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14},{0,14,16},{0,12,18}},
                                 {{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14},{0,14,16},{0,12,18},{0,10,20}},
                                 {{0,22,9},{0,20,11},{0,18,12},{0,16,14},{0,14,16},{0,12,18},{0,10,20},{0,8,22}},
                                 {{0,20,11},{0,18,12},{0,16,14},{0,14,16},{0,12,18},{0,10,20},{0,8,22},{0,6,24}},
                                 {{0,18,12},{0,16,14},{0,14,16},{0,12,18},{0,10,20},{0,8,22},{0,6,24},{0,4,26}},
                                 {{0,16,14},{0,14,16},{0,12,18},{0,10,20},{0,8,22},{0,6,24},{0,4,26},{0,2,28}},
-                                {{0,30,0},{0,28,3},{0,26,5},{0,24,7},{0,22,9},{0,20,11},{0,18,12},{0,16,14}},
                           };
 
 
 
-uint8_t pat_2[8][8][3] ={     {{25,0,1},{25,0,3},{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12},{25,0,14}},
+uint8_t pat_2[8][8][3] ={     {{25,0,0},{25,0,1},{25,0,3},{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12}},
+                              {{25,0,1},{25,0,3},{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12},{25,0,14}},
                               {{25,0,3},{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12},{25,0,14},{25,0,16}},
                               {{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12},{25,0,14},{25,0,16},{25,0,18}},
                               {{25,0,7},{25,0,9},{25,0,10},{25,0,12},{25,0,14},{25,0,16},{25,0,18},{25,0,19}},
                               {{25,0,9},{25,0,10},{25,0,12},{25,0,14},{25,0,16},{25,0,18},{25,0,19},{25,0,20}},
                               {{25,0,10},{25,0,12},{25,0,14},{25,0,16},{25,0,18},{25,0,19},{25,0,20},{25,0,22}},
                               {{25,0,12},{25,0,14},{25,0,16},{25,0,18},{25,0,19},{25,0,20},{25,0,22},{25,0,24}},
-                              {{25,0,0},{25,0,1},{25,0,3},{25,0,5},{25,0,7},{25,0,9},{25,0,10},{25,0,12}},
                           };
-uint8_t pat_3[8][8][3] ={     {{21,0,0},{17,0,0},{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0},{0,21,1}},
+uint8_t pat_3[8][8][3] ={     {{25,0,0},{21,0,0},{17,0,0},{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0}},
+                              {{21,0,0},{17,0,0},{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0},{0,21,1}},
                               {{17,0,0},{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0},{0,21,1},{0,17,5}},
                               {{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0},{0,21,1},{0,17,5},{0,13,9}},
                               {{9,13,0},{5,17,0},{1,21,0},{0,25,0},{0,21,1},{0,17,5},{0,13,9},{0,0,13}},
                               {{5,17,0},{1,21,0},{0,25,0},{0,21,1},{0,17,5},{0,13,9},{0,0,13},{0,0,17}},
                               {{1,21,0},{0,25,0},{0,21,1},{0,17,5},{0,13,9},{0,0,13},{0,0,17},{0,0,21}},
                               {{0,25,0},{0,21,1},{0,17,5},{0,13,9},{0,0,13},{0,0,17},{0,0,21},{0,0,25}},
-                              {{25,0,0},{21,0,0},{17,0,0},{13,0,0},{9,13,0},{5,17,0},{1,21,0},{0,25,0}},
                           };
 void random_spawn(int *ran_res,int max_x,int min_x,int max_y,int min_y){
   int x_axis = rand()%(max_x-min_x+1)+(min_x-1);
@@ -125,6 +141,8 @@ void random_spawn(int *ran_res,int max_x,int min_x,int max_y,int min_y){
   pc.printf("%d %d\n",ran_res[0],ran_res[1]);
 
 }
+
+
 
 void moveMap(uint8_t* map[48][48],int nextCenter[2],int mapsize[2],uint8_t* output[8][8]){
   int row,column;
@@ -180,6 +198,7 @@ int main(int argc, char const *argv[]) {
     while(1);
   }
   int ran_res_eiei[2];
+
   srand(time(NULL));
   while(1){
     random_spawn(ran_res_eiei,48,8,48,8);
@@ -192,10 +211,60 @@ int main(int argc, char const *argv[]) {
     }
   }
   pc.printf("%d %d\n",centerNow[0],centerNow[1] );
+  while(1){
+    random_spawn(ran_res_eiei,centerNow[0]+32,centerNow[0]+16,centerNow[1]+32,centerNow[1]+16);
+    special_item[0] = ran_res_eiei[0];
+    special_item[1] = ran_res_eiei[1];
+    if(special_item[0]>47){
+      special_item[0] = special_item[0]%48;
+    }
+    else if(special_item[0]<0){
+      special_item[0] = 48-special_item[0]%48;
+    }
+    if(special_item[1]>47){
+      special_item[1] = special_item[1]%48;
+    }
+    else if(special_item[1]<0){
+      special_item[1] = 48-special_item[1]%48;
+    }
+    if (Bigmap[special_item[1]][special_item[0]][0]==wall[0] && Bigmap[special_item[1]][special_item[0]][1]==wall[1] && Bigmap[special_item[1]][special_item[0]][2]==wall[2]){
+    }
+    else{
+      Bigmap[special_item[1]][special_item[0]] = end_item;
+      break;
+    }
+  }
+  pc.printf("%d %d\n",special_item[0],special_item[1] );
 
+  for(int i = 0;i<15;i++){
+    while(1){
+      random_spawn(ran_res_eiei,48,8,48,8);
+      revert_item_pos[0] = ran_res_eiei[0];
+      revert_item_pos[1] = ran_res_eiei[1];
+      if (Bigmap[revert_item_pos[1]][revert_item_pos[0]][0]==path[0] && Bigmap[revert_item_pos[1]][revert_item_pos[0]][1]==path[1] && Bigmap[revert_item_pos[1]][revert_item_pos[0]][2]==path[2]){
+        Bigmap[revert_item_pos[1]][revert_item_pos[0]] = bad_item;
+        break;
+      }
+      else{}
+    }
+  }
+  for(int i = 0;i<17;i++){
+    while(1){
+      random_spawn(ran_res_eiei,48,8,48,8);
+      increase_time[0] = ran_res_eiei[0];
+      increase_time[1] = ran_res_eiei[1];
+      if (Bigmap[increase_time[1]][increase_time[0]][0]==path[0] && Bigmap[increase_time[1]][increase_time[0]][1]==path[1] && Bigmap[increase_time[1]][increase_time[0]][2]==path[2]){
+        Bigmap[increase_time[1]][increase_time[0]] = good_item;
+        break;
+      }
+      else{}
+    }
+  }
 
-
-
+////////////////////
+//Loop start here//
+///////////////////
+T.start();
   while(1){
     int16_t data[7];
     mpu.readATandG(data);
@@ -207,7 +276,19 @@ int main(int argc, char const *argv[]) {
     // pc.printf("az = %f\n",az );
     // pc.printf("%i \n",rand()%100 + 1);
 
-
+    if (is_revert){
+      ay = -(ay)*2;
+      ax = -(ax)*2;
+      t.stop();
+      if(t.read() >= 20){
+        t.stop();
+        t.reset();
+        is_revert = false;
+      }
+      else{
+        t.start();
+      }
+    }
 
     if (ay<0.2 && ay>-0.2){}
     else if (ay>0){
@@ -243,9 +324,32 @@ int main(int argc, char const *argv[]) {
         frameCountx = 0;
       }
     }
-    if (Bigmap[centerNow[1]][centerNow[0]][0]==wall[0] && Bigmap[centerNow[1]][centerNow[0]][1]==wall[1] && Bigmap[centerNow[1]][centerNow[0]][2]==wall[2]){
-      centerNow[0] = previousCenter[0];
-      centerNow[1] = previousCenter[1];
+    if (Bigmap[centerNow[1]][centerNow[0]][0]!=path[0] || Bigmap[centerNow[1]][centerNow[0]][1]!=path[1] || Bigmap[centerNow[1]][centerNow[0]][2]!=path[2]){
+      if (Bigmap[centerNow[1]][centerNow[0]][0]==wall[0] && Bigmap[centerNow[1]][centerNow[0]][1]==wall[1] && Bigmap[centerNow[1]][centerNow[0]][2]==wall[2]){
+        centerNow[0] = previousCenter[0];
+        centerNow[1] = previousCenter[1];
+      }
+      else if (Bigmap[centerNow[1]][centerNow[0]][0]==end_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==end_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==end_item[2]){
+        break;
+      }
+      else if (Bigmap[centerNow[1]][centerNow[0]][0]==bad_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==bad_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==bad_item[2]){
+        int r =rand()%2;
+        pc.printf("%d\n",r);
+        if(r==0){
+          is_revert = true;
+          Bigmap[centerNow[1]][centerNow[0]] = path;
+          t.reset();
+          t.start();
+        }
+        else if(r==1){
+          timeout -= 20;
+          }
+        }
+      else if (Bigmap[centerNow[1]][centerNow[0]][0]==good_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==good_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==good_item[2]){
+          Bigmap[centerNow[1]][centerNow[0]] = path;
+          pc.printf("time + 20\n");
+          timeout += 20;
+      }
     }
     // centerNow[0] = 19;
     // centerNow[1] = 19;
@@ -256,6 +360,17 @@ int main(int argc, char const *argv[]) {
     frameCounty= (frameCounty+1)%500;
     previousCenter[0] = centerNow[0];
     previousCenter[1] = centerNow[1];
+
+    if(T.read()>=timeout){
+      is_win = false;
+      break;
+    }
+  }
+  while(is_win){
+    color_s.display(pat_3,8);
+  }
+  while(!is_win){
+    color_s.display(pat_1,8);
   }
   return 0;
 }

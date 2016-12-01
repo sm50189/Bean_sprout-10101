@@ -149,7 +149,8 @@
 #define ZA_OFFSET_H      0x7D
 #define ZA_OFFSET_L      0x7E
 
-#define MPU_ADDRESS 0x68<<1
+uint8_t MPU_ADDRESS = 0x68<<1;
+// #define MPU_ADDRESS 0x68<<1
 // #define MPU_ADDRESS 0x69<<1
 
 #define    GYRO_FULL_SCALE_250_DPS    0x00

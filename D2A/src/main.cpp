@@ -1,4 +1,3 @@
-
 #include "mbed.h"
 #include "MCP4922.h"
 
@@ -35,23 +34,7 @@ int main(void)
     MCP.frequency(1000000);
 
     uint16_t i=0;
-    uint8_t state=0;
-    // while(1) {
-    //     if(i < 0x0FFE) {
-    //         i++;
-    //
-    //     } else {
-    //         i=0;
-    //         state = ~state;
-    //     }
-    //
-    //     if(state ==0) {
-    //         MCP.writeA(i);
-    //     } else {
-    //         MCP.writeA( ((~i))&0x0FFF);
-    //     }
-    //     wait_us(1);
-    // }
+    uint8_t state='c';
 
     t.start();
     uint16_t begin = t.read_ms();

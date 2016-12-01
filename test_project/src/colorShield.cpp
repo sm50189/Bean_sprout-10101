@@ -23,10 +23,12 @@ void Color_shield::init(){
       for(int k=0;k<6;k++){
         SDA_LED = 1;
         SCL_LED = 0;
+        wait_us(0.1);
         SCL_LED = 1;
         }
       }
       LINE = LINE*2;
+
     }
 
   LAT_LED = 1;
@@ -55,12 +57,15 @@ void Color_shield::display(uint8_t *color[8][8],int multiplier){
           }
           c= c<<1;
           SCL_LED = 0;
+          wait_us(0.1);
           SCL_LED = 1;
+
         }
       }
     }
     LAT_LED = 1;
     LAT_LED = 0;
+
   }
 }
 void Color_shield::display(uint8_t color[8][8][3],int multiplier){
@@ -84,7 +89,9 @@ void Color_shield::display(uint8_t color[8][8][3],int multiplier){
           }
           c= c<<1;
           SCL_LED = 0;
+          wait_us(0.1);
           SCL_LED = 1;
+
         }
       }
     }

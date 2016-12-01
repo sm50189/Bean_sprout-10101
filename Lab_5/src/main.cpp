@@ -39,11 +39,10 @@ void Save_data(){
 
 int main(int argc, char const *argv[]) {
   Save.rise(&Save_data);
-  while (1==1){
-    // pc.printf("I am fucking running\n");
-  }
-  // if (wp == 0){
-  //   Input = swIn;
-  // }
-  // return 0;
+  while (1);
 }
+// pc.printf("I am fucking running\n");
+// if (wp == 0){
+//   Input = swIn;
+// }
+// return 0;

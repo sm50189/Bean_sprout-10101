@@ -1,23 +1,27 @@
 #include "mbed.h"
 #include "colorShield.h"
-#include "selfmpu.h"
+// #include "selfmpu.h"
+#include "MPU9250.h"
+#include "slave.h"
 
 Timer t;
 Timer T;
 
 int timeout = 120;
-bool is_win = true;
+bool is_win = false;
 
 uint8_t wall[3] = {25,25,0};
 uint8_t path[3] = {0,0,0};
-uint8_t character[3] = {255,255,0};
+uint8_t character[3] = {255,255,255};
 uint8_t end_item[3] = {0,255,0};
 uint8_t bad_item[3] = {0,0,255};
 uint8_t good_item[3] = {255,0,255};
 Serial pc(D1,D0);
+Serial bt(PA_15,PB_7);
 Color_shield color_s;
-MPU9555 mpu;
-
+// MPU9555 mpu;
+SPI spi(PB_15,PB_14,PB_13);
+mpu9250_spi mpu(spi,PC_4);
 bool is_revert = false;
 
 
@@ -32,9 +36,10 @@ int increase_time[2];
 int revert_item_pos[2];
 int previousCenter[2] = {3,3};
 int mapsize[2] = {48,48};
+
 uint8_t *output[8][8];
 
-uint8_t *Bigmap[48][48] = {{wall,path,path,wall,wall,wall,wall,wall,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,wall,path,path,wall,path,path,path,path,path,path,path,path},
+uint8_t *Bigmap1[48][48] = {{wall,path,path,wall,wall,wall,wall,wall,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,wall,path,path,wall,path,path,path,path,path,path,path,path},
                             {wall,path,path,wall,path,path,path,path,path,path,wall,path,path,path,path,path,path,path,path,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,wall,path,path,path,path,path,path,path,path},
                             {wall,path,path,wall,path,path,path,path,path,path,wall,path,path,wall,wall,wall,wall,wall,wall,wall,path,wall,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,wall,path,path,path,wall,path,wall,wall,wall},
                             {wall,path,path,wall,path,path,wall,wall,path,path,wall,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,path,wall,path,path,path,wall,path,wall,path,path},
@@ -84,7 +89,7 @@ uint8_t *Bigmap[48][48] = {{wall,path,path,wall,wall,wall,wall,wall,path,path,wa
                             {wall,path,wall,path,path,path,path,wall,path,path,wall,path,path,path,path,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall}
                           };
 
-uint8_t *Bigmap2[48][48] = {
+uint8_t *Bigmap[48][48] = {
                             {wall,path,path,path,wall,wall,wall,wall,path,path,wall,wall,wall,wall,wall,wall,wall,path,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,wall,path,path,path,wall,path,wall,wall,wall,wall,path,path,wall,path,path,path,wall,path,path},
                             {wall,path,path,path,wall,path,path,wall,path,path,wall,path,path,path,path,path,wall,path,path,path,path,path,wall,wall,wall,path,path,path,wall,wall,path,path,path,wall,path,path,path,path,path,path,path,wall,path,path,path,wall,path,path},
                             {wall,path,path,path,wall,path,path,wall,path,path,wall,path,path,path,path,path,wall,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,path,path},
@@ -211,20 +216,101 @@ void moveMap(uint8_t* map[48][48],int nextCenter[2],int mapsize[2],uint8_t* outp
   }
   output[3][3] = character;
 }
+char buffer[4]={0x00,0x00,0x00,0x00};
+char msg[1] = {0x00};
+char raw_data[128];
+int x_recieve=0,y_recieve=0;
+bool is_inLoop = true;
+bool serial_en = false;
+// void Serial_inter(){
+//   // for(int i = 0;i<4;i++){
+//   //   raw_data[i] = bt.getc();
+//   // }
+//     // pc.putc('s');
+//     // if(bt.readable()){
+//     //   bt.scanf("%s",raw_data );
+//     // }
+//     if (serial_en){
+//       int count_packet = 0;
+//       for(int i = 0;i<5;i++){
+//         if(bt.readable()){
+//           raw_data[i] = bt.getc();
+//           count_packet += 1;
+//         }
+//
+//       }
+//       // pc.abort_read();
+//       // raw_data[0] = bt.getc();
+//       // raw_data[1] = bt.getc();
+//       // raw_data[2] = bt.getc();
+//       // raw_data[3] = bt.getc();
+//       bool header = false;
+//       int count = 0;
+//       if(count_packet>4){
+//         for (int i = 0; i < 4; i++) {
+//           if(header && raw_data[i]!= 0xFE && raw_data[i]!=0xFF ){
+//             dataa[count] = raw_data[i];
+//             count += 1;
+//           }
+//           if(count > 1){
+//             break;
+//           }
+//           if(raw_data[i] == 0xFF){
+//             header = true;
+//           }
+//           if(raw_data[i] == 0xFE){
+//             header = true;
+//           }
+//         }
+//       }
+//       header = false;
+//       if(dataa[0]&0x02){
+//         if(dataa[0]&0x04){
+//           aby = -dataa[1];
+//         }
+//         else{
+//           aby = dataa[1];
+//         }
+//       }
+//       else{
+//         if(dataa[0]&0x04){
+//           abx = -dataa[1];
+//         }
+//         else{
+//           abx = dataa[1];
+//         }
+//       }
+//       if(dataa[0]&0x01){
+//         is_inLoop = true;
+//       }
+//       else{
+//         is_inLoop = true;
+//       }
+//       pc.putc(dataa[0]);
+//       pc.putc(dataa[1]);
+//       pc.abort_write();
+//   }
+// }
+
 
 int main(int argc, char const *argv[]) {
-  MPU_ADDRESS = 0x68<<1;
-
-  i2c.frequency(400000);
+  //bt.attach(&Serial_inter);
+  bt.baud(9600);
+  pc.baud(9600);
+  slave.address(0x70);
+  // I2C_StretchClockCmd(I2C2, ENABLE);
+  //i2c.frequency(400000);
   color_s.init();
-  uint8_t whoami = mpu.readByte(MPU_ADDRESS,WHO_AM_I_MPU9250);
+  uint8_t whoami = mpu.whoami();
   if (whoami == 0x71) // WHO_AM_I should always be 0x68
   {
     pc.printf("MPU9250 WHO_AM_I is 0x%x\n\r", whoami);
     pc.printf("MPU9250 is online...\n\r");
     color_s.display(pat_3,4);
-    mpu.resetMPU();
+    mpu.set_acc_scale(2);
+    mpu.calib_acc();
     mpu.calibrateMPU(gyroBias,accBias);
+    wait(1);
     pc.printf("gxBias = %f\t",gyroBias[0] );
     pc.printf("gyBias = %f\t",gyroBias[1] );
     pc.printf("gzBias = %f\n",gyroBias[2] );
@@ -232,12 +318,9 @@ int main(int argc, char const *argv[]) {
     pc.printf("axBias = %f\t",accBias[0] );
     pc.printf("axBias = %f\t",accBias[1] );
     pc.printf("axBias = %f\n",accBias[2] );
-
+    mpu.set_acc_scale(2);
     wait(2);
-
-    mpu.initial_MPU();
     pc.printf("complete ....\n" );
-
     wait(2);
   }
   else
@@ -260,7 +343,6 @@ int main(int argc, char const *argv[]) {
       break;
     }
   }
-  pc.printf("%d %d\n",centerNow[0],centerNow[1] );
   while(1){
     random_spawn(ran_res_eiei,centerNow[0]+32,centerNow[0]+16,centerNow[1]+32,centerNow[1]+16);
     special_item[0] = ran_res_eiei[0];
@@ -284,7 +366,7 @@ int main(int argc, char const *argv[]) {
       break;
     }
   }
-  pc.printf("%d %d\n",special_item[0],special_item[1] );
+  // pc.printf("%d %d\n",special_item[0],special_item[1] );
 
   for(int i = 0;i<15;i++){
     while(1){
@@ -316,17 +398,37 @@ int main(int argc, char const *argv[]) {
 ///////////////////
 T.start();
   while(1){
+    serial_en = true;
     int16_t data[7];
-    mpu.readATandG(data);
-    float ares = mpu.getAres();
-    float ax = (float)data[0]*ares - accBias[0];
-    float ay = (float)data[1]*ares - accBias[1];
-    // pc.printf("ax = %f\t",ax );
-    // pc.printf("ay = %f\t\n",ay );
-    // pc.printf("az = %f\n",az );
-    // pc.printf("%i \n",rand()%100 + 1);
+    // mpu.readATandG(data);
+    // float ares = mpu.getAres();
+    // float ax_mpu = (float)data[0]*ares - accBias[0];
+    // float ay_mpu = (float)data[1]*ares - accBias[1];
+    mpu.read_acc();
+    float ax_mpu = mpu.accelerometer_data[0] - (float)mpu.calib_data[0]/(float)mpu.acc_divider;
+    float ay_mpu = mpu.accelerometer_data[1] - (float)mpu.calib_data[1]/(float)mpu.acc_divider;
 
+    int i = slave.receive();
+    // printf("%d\n",i);
+    // slave.stop();
+    // while (i==0){i = slave.receive();}
+    // printf("%d\n",i );
+    get_recieve(i,msg,buffer,3,1);
+    wait_ms(10);
+    i = slave.receive();
+    get_recieve(i,msg,buffer,3,1);
+    y_recieve = buffer[1];
+    x_recieve = buffer[0];
+    // printf("%d\n",buffer[2] );
+    if(buffer[2]&0x04){x_recieve = -x_recieve;}
+    if(buffer[2]&0x02){y_recieve = -y_recieve;}
+    if(buffer[2]&0x01){is_win = false; break;}
+    // slave.stop();
+    int ay = (int8_t)(ay_mpu*100)+y_recieve*1.5;
+    int ax = (int8_t)(ax_mpu*100)+x_recieve*1.5;
     if (is_revert){
+      if(msg[0]&0x02){}
+      else{msg[0] += 0x02;}
       ay = -(ay)*2;
       ax = -(ax)*2;
       t.stop();
@@ -340,25 +442,28 @@ T.start();
       }
     }
 
-    if (ay<0.2 && ay>-0.2){}
+    if (ay<20 && ay>-20){}
     else if (ay>0){
-      if(frameCounty >= 150-(int)(ay*100)){
+      // if(frameCounty >= 50-(int)(ay*100)){
+        if(frameCounty >= 100-ay){
         centerNow[1]++;
         centerNow[1] = centerNow[1]%48;
         frameCounty = 0;
       }
     }
     else if(ay<=0){
-      if(frameCounty >= 150+(int)(ay*100)){
+      // if(frameCounty >= 50+(int)(ay*100)){
+      if(frameCounty >= 100+ay){
         centerNow[1]--;
         if (centerNow[1]<0){centerNow[1] = 48+(centerNow[1]%49);}
         else{centerNow[1] = centerNow[1]%48;}
         frameCounty = 0;
       }
     }
-    if (ax<0.2 && ax>-0.2){}
+    if (ax<20 && ax>-20){}
     else if (ax>0){
-      if(frameCountx >= 150-(int)(ax*100)){
+      // if(frameCountx >= 50-(int)(ax*100)){
+      if(frameCountx >= 100-ax){
         // pc.printf("%d\n", 150-(int)(ax*200));
         centerNow[0]++;
         centerNow[0] = centerNow[0]%48;
@@ -366,7 +471,8 @@ T.start();
       }
     }
     else if(ax<=0){
-      if(frameCountx >= 150+(int)(ax*100)){
+      // if(frameCountx >= 50+(int)(ax*100)){
+      if(frameCountx >= 100+ax){
         // pc.printf("%d\n", 150+(int)(ax*200));
         centerNow[0]=centerNow[0]-1;
         if (centerNow[0]<0){centerNow[0] = 48+(centerNow[0]%49);}
@@ -380,11 +486,14 @@ T.start();
         centerNow[1] = previousCenter[1];
       }
       else if (Bigmap[centerNow[1]][centerNow[0]][0]==end_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==end_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==end_item[2]){
+        is_win = true;
+        if(msg[0]&0x01){}
+        else{msg[0] += 0x01;}
         break;
       }
       else if (Bigmap[centerNow[1]][centerNow[0]][0]==bad_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==bad_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==bad_item[2]){
+        srand(time(NULL));
         int r =rand()%2;
-        pc.printf("%d\n",r);
         if(r==0){
           is_revert = true;
           Bigmap[centerNow[1]][centerNow[0]] = path;
@@ -392,18 +501,21 @@ T.start();
           t.start();
         }
         else if(r==1){
-          timeout -= 20;
+          Bigmap[centerNow[1]][centerNow[0]] = path;
+          if(msg[0]&0x04){}
+          else{msg[0] += 0x04;}
           }
         }
       else if (Bigmap[centerNow[1]][centerNow[0]][0]==good_item[0] && Bigmap[centerNow[1]][centerNow[0]][1]==good_item[1] && Bigmap[centerNow[1]][centerNow[0]][2]==good_item[2]){
           Bigmap[centerNow[1]][centerNow[0]] = path;
-          pc.printf("time + 20\n");
-          timeout += 20;
+          if(msg[0]&0x08){}
+          else{msg[0] += 0x08;}
       }
     }
+
     // centerNow[0] = 19;
     // centerNow[1] = 19;
-    // pc.printf("%d %d\n",centerNow[0],centerNow[1] );
+    // pc.printf("%d %d\n",ax,ay );
     moveMap(Bigmap,centerNow,mapsize,output);
     color_s.display(output,5);
     frameCountx= (frameCountx+1)%500;
@@ -411,16 +523,16 @@ T.start();
     previousCenter[0] = centerNow[0];
     previousCenter[1] = centerNow[1];
 
-    if(T.read()>=timeout){
-      is_win = false;
-      break;
-    }
+    // if(T.read()>=timeout){
+    //   is_win = false;
+    //   break;
+    // }
   }
   while(is_win){
-    color_s.display(pat_3,8);
+    color_s.display(pat_3,10);
   }
   while(!is_win){
-    color_s.display(pat_1,8);
+    color_s.display(pat_1,10);
   }
   return 0;
 }

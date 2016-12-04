@@ -1,7 +1,7 @@
 #include "mbed.h"
 #include "colorShield.h"
 
-BusOut LINE(D4,D8,D9,D10,D11,D12,D13,D3);
+BusOut LINE(D8,D9,D10,D11,D12,D13,D3,D4);
 // BusOut LINE(D3,D4,D8,D9,D10,D11,D12,D13);
 // BusOut LINE(D8,D9,D10,D11,D12,D13,D3,D4);
 DigitalOut RST_LED(PA_4);
@@ -23,7 +23,6 @@ void Color_shield::init(){
       for(int k=0;k<6;k++){
         SDA_LED = 1;
         SCL_LED = 0;
-        wait_us(0.1);
         SCL_LED = 1;
         }
       }
@@ -33,7 +32,7 @@ void Color_shield::init(){
 
   LAT_LED = 1;
   LAT_LED = 0;
-  wait(1);
+  wait(2);
 }
 
 void Color_shield::display(uint8_t *color[8][8],int multiplier){
@@ -41,9 +40,9 @@ void Color_shield::display(uint8_t *color[8][8],int multiplier){
   SLB_LED = 1;
   int counter = 1;
   uint8_t c;
+  LINE = 0;
   for (int l = 0; l<8 ; l++){
-    LINE = counter;
-    counter *= 2;
+    // LINE = counter;
     for(int i = 0; i<8;i++){
       for(int j = 0; j <3; j++){
         c = color[l][i][j];
@@ -57,15 +56,14 @@ void Color_shield::display(uint8_t *color[8][8],int multiplier){
           }
           c= c<<1;
           SCL_LED = 0;
-          wait_us(0.1);
           SCL_LED = 1;
-
         }
       }
     }
     LAT_LED = 1;
     LAT_LED = 0;
-
+    LINE = counter;
+    counter *= 2;
   }
 }
 void Color_shield::display(uint8_t color[8][8][3],int multiplier){
@@ -74,8 +72,6 @@ void Color_shield::display(uint8_t color[8][8][3],int multiplier){
   int counter = 1;
   uint8_t c;
   for (int l = 0; l<8 ; l++){
-    LINE = counter;
-    counter *= 2;
     for(int i = 0; i<8;i++){
       for(int j = 0; j <3; j++){
         c = color[l][i][j];
@@ -89,7 +85,6 @@ void Color_shield::display(uint8_t color[8][8][3],int multiplier){
           }
           c= c<<1;
           SCL_LED = 0;
-          wait_us(0.1);
           SCL_LED = 1;
 
         }
@@ -97,6 +92,7 @@ void Color_shield::display(uint8_t color[8][8][3],int multiplier){
     }
     LAT_LED = 1;
     LAT_LED = 0;
-    // LINE = 0;
+    LINE = counter;
+    counter *= 2;
   }
 }

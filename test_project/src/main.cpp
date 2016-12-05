@@ -89,7 +89,7 @@ uint8_t *Bigmap1[48][48] = {{wall,path,path,wall,wall,wall,wall,wall,path,path,w
                             {wall,path,wall,path,path,path,path,wall,path,path,wall,path,path,path,path,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall}
                           };
 
-uint8_t *Bigmap[48][48] = {
+uint8_t *Bigmap2[48][48] = {
                             {wall,path,path,path,wall,wall,wall,wall,path,path,wall,wall,wall,wall,wall,wall,wall,path,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,wall,path,path,path,wall,path,wall,wall,wall,wall,path,path,wall,path,path,path,wall,path,path},
                             {wall,path,path,path,wall,path,path,wall,path,path,wall,path,path,path,path,path,wall,path,path,path,path,path,wall,wall,wall,path,path,path,wall,wall,path,path,path,wall,path,path,path,path,path,path,path,wall,path,path,path,wall,path,path},
                             {wall,path,path,path,wall,path,path,wall,path,path,wall,path,path,path,path,path,wall,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,wall,wall,wall,wall,wall,wall,wall,wall,path,path,path,wall,path,path},
@@ -291,9 +291,28 @@ bool serial_en = false;
 //       pc.abort_write();
 //   }
 // }
-
+uint8_t *Bigmap[48][48];
+void randomMap(uint8_t *output[48][48],uint8_t *map1[48][48],uint8_t *map2[48][48]){
+  srand(time(NULL));
+  if(rand()%2==0){
+    for(int i = 0 ; i<48;i++){
+      for(int j = 0; j<48;j++){
+        Bigmap[i][j] = map1[i][j];
+      }
+    }
+  }
+  else{
+    for(int i = 0 ; i<48;i++){
+      for(int j = 0; j<48;j++){
+        Bigmap[i][j] = map2[i][j];
+      }
+    }
+  }
+}
+// Bigmap = &Bigmap2;
 
 int main(int argc, char const *argv[]) {
+  randomMap(Bigmap,Bigmap1,Bigmap2);
   //bt.attach(&Serial_inter);
   bt.baud(9600);
   pc.baud(9600);
@@ -414,7 +433,7 @@ T.start();
     // while (i==0){i = slave.receive();}
     // printf("%d\n",i );
     get_recieve(i,msg,buffer,3,1);
-    wait_ms(10);
+    wait_ms(5 );
     // if(i==3){while(i!=1){i = slave.receive();}}
     // else{while(i!=3){i= slave.receive();}}
     i = slave.receive();
@@ -531,6 +550,11 @@ T.start();
     // }
   }
   while(is_win){
+    msg[0] = 0x01;
+    printf("0x%x\n",msg[0] );
+    int i = slave.receive();
+    get_recieve(i,msg,buffer,3,1);
+    wait_ms(10);
     color_s.display(pat_3,10);
   }
   while(!is_win){

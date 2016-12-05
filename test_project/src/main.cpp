@@ -297,7 +297,7 @@ int main(int argc, char const *argv[]) {
   //bt.attach(&Serial_inter);
   bt.baud(9600);
   pc.baud(9600);
-  slave.address(0x70);
+  slave.address(0x70<<1);
   // I2C_StretchClockCmd(I2C2, ENABLE);
   //i2c.frequency(400000);
   color_s.init();
@@ -415,6 +415,8 @@ T.start();
     // printf("%d\n",i );
     get_recieve(i,msg,buffer,3,1);
     wait_ms(10);
+    // if(i==3){while(i!=1){i = slave.receive();}}
+    // else{while(i!=3){i= slave.receive();}}
     i = slave.receive();
     get_recieve(i,msg,buffer,3,1);
     y_recieve = buffer[1];
@@ -517,7 +519,7 @@ T.start();
     // centerNow[1] = 19;
     // pc.printf("%d %d\n",ax,ay );
     moveMap(Bigmap,centerNow,mapsize,output);
-    color_s.display(output,5);
+    color_s.display(output,10);
     frameCountx= (frameCountx+1)%500;
     frameCounty= (frameCounty+1)%500;
     previousCenter[0] = centerNow[0];

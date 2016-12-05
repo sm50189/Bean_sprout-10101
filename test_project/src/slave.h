@@ -15,17 +15,18 @@ void get_recieve(int recieve,char *msg,char buf[],int NbyteRead,int NbyteWrite){
   switch (recieve) {
     case I2CSlave::ReadAddressed:
       status = slave.write(msg,1);
-      slave.stop();
+
       printf("write :0x%x\n", msg[0]);
       //if(msg[0]>0x02){wait(0.01);}
+      slave.stop();
       if(status == 0){msg[0] = 0x00;}
       break;
     case I2CSlave::WriteAddressed:
 
       slave.read(buf,NbyteRead);
-      slave.stop();
       // printf("read\n");
       printf("read :0x%x 0%x\n",buf[0],buf[1]);
+      slave.stop();
       break;
     case I2CSlave::WriteGeneral:
       slave.read(buf, NbyteRead);

@@ -65,6 +65,8 @@ void Color_shield::display(uint8_t *color[8][8],int multiplier){
     LINE = counter;
     counter *= 2;
   }
+  wait_us(500);
+  LINE = 0;
 }
 void Color_shield::display(uint8_t color[8][8][3],int multiplier){
   LAT_LED = 0;
